@@ -1,0 +1,32 @@
+FROM python:3.12-slim
+
+ARG MUSICOPS_BUILD_COMMIT=dev
+ARG MUSICOPS_BUILD_TIME=dev
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    MUSICOPS_DATA_DIR=/data \
+    MUSICOPS_BUILD_COMMIT=${MUSICOPS_BUILD_COMMIT} \
+    MUSICOPS_BUILD_TIME=${MUSICOPS_BUILD_TIME}
+
+RUN useradd --create-home --shell /usr/sbin/nologin musicops \
+    && mkdir -p /data \
+    && chown musicops:musicops /data
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --chown=musicops:musicops pyproject.toml README.md ./
+COPY --chown=musicops:musicops src ./src
+COPY --chown=musicops:musicops tests ./tests
+
+RUN pip install --no-cache-dir --timeout 120 --retries 8 ".[dev]"
+
+USER musicops
+
+EXPOSE 8088
+
+CMD ["uvicorn", "musicops.main:app", "--host", "0.0.0.0", "--port", "8088"]

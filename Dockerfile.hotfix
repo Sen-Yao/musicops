@@ -1,0 +1,50 @@
+ARG MUSICOPS_BASE_IMAGE=musicops:latest
+FROM ${MUSICOPS_BASE_IMAGE}
+
+ARG MUSICOPS_BUILD_COMMIT=unknown
+ARG MUSICOPS_BUILD_TREE=unknown
+ARG MUSICOPS_BUILD_TIME=unknown
+ARG MUSICOPS_SOURCE_MANIFEST_SHA256=unknown
+ARG MUSICOPS_ACTION_SCHEMA_DIGEST=unknown
+
+ENV MUSICOPS_BUILD_COMMIT=${MUSICOPS_BUILD_COMMIT} \
+    MUSICOPS_BUILD_TREE=${MUSICOPS_BUILD_TREE} \
+    MUSICOPS_BUILD_TIME=${MUSICOPS_BUILD_TIME} \
+    MUSICOPS_SOURCE_MANIFEST_SHA256=${MUSICOPS_SOURCE_MANIFEST_SHA256} \
+    MUSICOPS_ACTION_SCHEMA_DIGEST=${MUSICOPS_ACTION_SCHEMA_DIGEST} \
+    MUSICOPS_SOURCE_ROOT=/app \
+    MUSICOPS_SOURCE_MANIFEST_PATH=/app/.musicops-source-manifest \
+    PYTHONDONTWRITEBYTECODE=1
+
+USER root
+WORKDIR /
+RUN (python -m pip uninstall -y musicops || true) \
+    && rm -rf /app \
+    && python -c "import pathlib, shutil, sysconfig; root=pathlib.Path(sysconfig.get_paths()['purelib']); [shutil.rmtree(path, ignore_errors=True) for pattern in ('musicops','musicops-*.dist-info','musicops-*.egg-info') for path in root.glob(pattern)]"
+
+WORKDIR /app
+COPY --chown=musicops:musicops pyproject.toml README.md .musicops-source-manifest ./
+COPY --chown=musicops:musicops src ./src
+
+RUN test -z "$(find /app -name '._*' -print -quit)" \
+    && PYTHONPATH=/app/src python -m musicops.provenance verify \
+      --root /app \
+      --manifest /app/.musicops-source-manifest \
+      --expected-sha256 "${MUSICOPS_SOURCE_MANIFEST_SHA256}" \
+    && pip install --no-cache-dir --timeout 120 --retries 8 opencc-python-reimplemented==0.1.7 \
+    && pip install --no-cache-dir --no-deps . \
+    && rm -rf /app/build /app/src/*.egg-info \
+    && PYTHONPATH=/app/src python -m musicops.provenance verify \
+      --root /app \
+      --manifest /app/.musicops-source-manifest \
+      --expected-sha256 "${MUSICOPS_SOURCE_MANIFEST_SHA256}" \
+    && chown -R musicops:musicops /app
+USER musicops
+
+LABEL org.senyaolab.musicops.image-kind="application" \
+      org.senyaolab.musicops.git-commit="${MUSICOPS_BUILD_COMMIT}" \
+      org.senyaolab.musicops.git-tree="${MUSICOPS_BUILD_TREE}" \
+      org.senyaolab.musicops.source-manifest-sha256="${MUSICOPS_SOURCE_MANIFEST_SHA256}" \
+      org.senyaolab.musicops.action-schema-digest="${MUSICOPS_ACTION_SCHEMA_DIGEST}"
+
+CMD ["uvicorn", "musicops.main:app", "--host", "0.0.0.0", "--port", "8088"]

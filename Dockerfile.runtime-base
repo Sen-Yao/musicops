@@ -1,0 +1,33 @@
+ARG MUSICOPS_RUNTIME_SOURCE_IMAGE
+FROM ${MUSICOPS_RUNTIME_SOURCE_IMAGE}
+
+USER root
+WORKDIR /
+RUN (python -m pip uninstall -y musicops || true) \
+    && rm -rf /app \
+    && python -c "import pathlib, shutil, sysconfig; root=pathlib.Path(sysconfig.get_paths()['purelib']); [shutil.rmtree(path, ignore_errors=True) for pattern in ('musicops','musicops-*.dist-info','musicops-*.egg-info') for path in root.glob(pattern)]" \
+    && python -c "import importlib.util; assert importlib.util.find_spec('musicops') is None" \
+    && command -v ffmpeg >/dev/null
+
+ARG MUSICOPS_BUILD_COMMIT=unknown
+ARG MUSICOPS_BUILD_TREE=unknown
+ARG MUSICOPS_BUILD_TIME=unknown
+ENV MUSICOPS_BUILD_COMMIT=runtime-base \
+    MUSICOPS_BUILD_TREE=${MUSICOPS_BUILD_TREE} \
+    MUSICOPS_BUILD_TIME=${MUSICOPS_BUILD_TIME} \
+    MUSICOPS_SOURCE_MANIFEST_SHA256=runtime-base \
+    MUSICOPS_ACTION_SCHEMA_DIGEST=runtime-base
+
+ENV AXONHUB_API_KEY= \
+    MUSICOPS_API_TOKEN= \
+    NAVIDROME_PASSWORD= \
+    PROXY_USER= \
+    PROXY_PASS= \
+    TELEGRAM_API_HASH=
+
+LABEL org.senyaolab.musicops.image-kind="runtime-base" \
+      org.senyaolab.musicops.runtime-base-source-commit="${MUSICOPS_BUILD_COMMIT}" \
+      org.senyaolab.musicops.runtime-base-source-tree="${MUSICOPS_BUILD_TREE}"
+
+USER musicops
+CMD ["python", "-c", "print('MusicOps runtime base; no application installed')"]
