@@ -2,6 +2,9 @@
 
 The Docker Hub repository is `ziyaolin/musicops`. Use the registry digest from a verified release as the Repository field in Unraid. The template's `latest` reference is for discovery. Record the specific digest and source commit for every production change.
 
+The first published build is `ziyaolin/musicops:sha-671f59811a98`.
+Its pinned reference is `ziyaolin/musicops@sha256:9491265268978dbfbda71d72a3dcebf47e4ff7f5829541367dd8b804e67d0978`.
+
 ## Prepare the container
 
 - Use `templates/musicops-unraid.xml` as the Unraid user template and manage the container on the Docker tab. For a migration, retain the `musicops_default` network and host port 8086. For a fresh install, select an existing appropriate bridge network or create `musicops_default` before applying the template.
