@@ -1,24 +1,25 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>musicops</Name>
-  <Repository>localhost/musicops:latest</Repository>
+  <Repository>docker.io/ziyaolin/musicops:latest</Repository>
   <Shell>sh</Shell>
-  <Network>bridge</Network>
+  <Network>musicops_default</Network>
   <Privileged>false</Privileged>
   <Support/>
   <Project>https://github.com/Sen-Yao/musicops</Project>
   <Overview>
-MusicOps action gateway for library operations, downloads, lyrics, translation, STT and Navidrome.
+MusicOps action gateway for library operations, downloads, Agent-translated lyrics, STT and Navidrome.
 Agents compose independent actions; MusicOps owns durable operations, approvals and readback.
   </Overview>
   <Category>Productivity:</Category>
   <WebUI>http://[IP]:[PORT:8088]/health/ready</WebUI>
   <TemplateURL/>
-  <Icon>https://raw.githubusercontent.com/Sen-Yao/musicops/main/assets/icon.png</Icon>
-  <Config Name="API Token" Target="MUSICOPS_API_TOKEN" Default="change-me" Mode="" Description="API token for authentication" Type="Variable" Display="always" Required="true" Mask="true"/>
-  <Config Name="Data Directory" Target="/data" Default="/mnt/user/appdata/musicops" Mode="rw" Description="Persistent data storage" Type="Path" Display="always" Required="true"/>
+  <ExtraParams>--env-file /mnt/user/appdata/musicops/secrets/unraid-runtime.env --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE --cap-add FOWNER --security-opt no-new-privileges:true --restart unless-stopped</ExtraParams>
+  <Config Name="API Token File" Target="/run/secrets/musicops_api_token" Default="/mnt/user/appdata/musicops/secrets/musicops-api-token" Mode="ro" Description="Host file containing the bearer token" Type="Path" Display="always" Required="true"/>
+  <Config Name="API Token File Path" Target="MUSICOPS_API_TOKEN_FILE" Default="/run/secrets/musicops_api_token" Mode="" Description="Container path for the token file" Type="Variable" Display="advanced" Required="true"/>
+  <Config Name="Data Directory" Target="/data" Default="/mnt/user/appdata/musicops/data" Mode="rw" Description="Persistent data storage" Type="Path" Display="always" Required="true"/>
   <Config Name="Telegram Sessions" Target="/sessions" Default="/mnt/user/appdata/music-manager/scripts" Mode="ro" Description="Telegram session files directory" Type="Path" Display="always" Required="false"/>
   <Config Name="Music Library" Target="/music" Default="/mnt/user/media/music" Mode="rw" Description="Writable library mount for approved actions" Type="Path" Display="always" Required="true"/>
   <Config Name="Music Library Root" Target="MUSICOPS_LIBRARY_ROOT" Default="/music" Mode="" Description="Container path guarded by library actions" Type="Variable" Display="always" Required="true"/>
-  <Config Name="Port" Target="8088" Default="8088" Mode="tcp" Description="HTTP API port" Type="Port" Display="always" Required="true"/>
+  <Config Name="Port" Target="8088" Default="8086" Mode="tcp" Description="HTTP API port" Type="Port" Display="always" Required="true"/>
 </Container>
